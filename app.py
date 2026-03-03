@@ -3,11 +3,11 @@ import pandas as pd
 import plotly.express as px
 
 # ==========================================
-# 页面基本配置
+# settings
 # ==========================================
 st.set_page_config(page_title="Toast Smart Recs & Loyalty", layout="wide", page_icon="🍽️")
 
-# --- 侧边栏导航 ---
+# navigation sidebar
 st.sidebar.title("🍽️ Smart POS System")
 st.sidebar.markdown("Integration Prototype for Toast")
 page = st.sidebar.radio("Navigation", ["1. Front-of-House (POS View)", "2. Manager Dashboard"])
@@ -16,7 +16,7 @@ st.sidebar.divider()
 st.sidebar.info("Team: Bohan Yang & Luping Zhou\n\nProject: Improve your eating experience")
 
 # ==========================================
-# 模拟后端菜单与标签数据 (对应 Phase 1: Data Schema)
+# anonymous dataset for menu items and their ideal contexts (for demonstration purposes)
 # ==========================================
 @st.cache_data
 def load_menu_data():
@@ -31,7 +31,7 @@ def load_menu_data():
 menu_df = load_menu_data()
 
 # ==========================================
-# 页面 1: 前台点餐系统 (对应 Phase 2 & 3)
+#  main page
 # ==========================================
 if page == "1. Front-of-House (POS View)":
     st.title("🛎️ Waitstaff POS Interface")
@@ -41,13 +41,13 @@ if page == "1. Front-of-House (POS View)":
     
     with col1:
         st.subheader("1. Context & Customer")
-        # 顾客基础信息，使用 Hash ID 满足隐私要求
+        # basic customer info (hashed ID and historical order count)
         customer_id = st.text_input("Customer ID (Hashed)", value="CUST-8F92A")
         orders_completed = st.number_input("Historical Order Count", min_value=0, value=4, step=1)
         
         st.divider()
         st.markdown("**Real-time Environmental Tags**")
-        # 实时环境与可选情绪标签
+        # lazy loading of real-time context (simulated with selectboxes for demo)
         current_weather = st.selectbox("Current Weather", ["Cold/Rainy", "Hot/Sunny", "Mild"])
         current_mood = st.selectbox("Customer Mood (Optional)", ["Neutral", "Happy", "Stressed"])
         
@@ -58,17 +58,17 @@ if page == "1. Front-of-House (POS View)":
         if generate_btn:
             st.success("Recommendations generated!")
             
-            # 生成带解释的推荐逻辑 (Phase 2)
+            # explanation of the recommendation logic
             st.markdown("### 🌟 Top-K Suggested Items")
             
-            # 简单的推荐过滤逻辑
+            # simple recommendation logic based on matching current context with ideal contexts in the menu dataset
             recommendations = menu_df[(menu_df['Ideal_Weather'] == current_weather) | (menu_df['Ideal_Mood'] == current_mood)].head(3)
             if recommendations.empty:
                 recommendations = menu_df.head(2) 
                 
             for index, row in recommendations.iterrows():
                 with st.expander(f"⭐ **{row['Dish']}** - ${row['Base_Price']}"):
-                    # 生成解释性文字
+                    # explanation of why this dish is recommended based on the current context
                     reason = ""
                     if row['Ideal_Weather'] == current_weather and current_weather == "Cold/Rainy":
                         reason = "It's cold/rainy today, how about a warm bowl of soup?"
@@ -82,12 +82,11 @@ if page == "1. Front-of-House (POS View)":
                     st.write(f"**Explanation:** {reason}")
                     st.button(f"Add {row['Dish']} to Cart", key=f"add_{index}")
             
-            # 自动化里程碑优惠券发放 (Phase 3)
+            # check for loyalty milestone and trigger coupon distribution if applicable
             st.divider()
             st.markdown("### 🎟️ Loyalty Milestone Check")
             current_order_total = orders_completed + 1
             
-            # 假设每满 5 单触发一次优惠券
             if current_order_total % 5 == 0:
                 st.balloons()
                 st.warning(f"**MILESTONE REACHED!** This is order #{current_order_total}. Triggering 20% OFF Coupon distribution automatically.")
@@ -95,13 +94,13 @@ if page == "1. Front-of-House (POS View)":
                 st.info(f"This is order #{current_order_total}. Needs {5 - (current_order_total % 5)} more orders for the next reward.")
 
 # ==========================================
-# 页面 2: 后台店长看板 (对应 Phase 4)
+# dashboard page for managers to monitor recommendation performance and coupon redemption rates
 # ==========================================
 elif page == "2. Manager Dashboard":
     st.title("📊 Restaurant Analytics Dashboard")
     st.markdown("Monitor recommendation performance and coupon redemption rates.")
     
-    # 核心业务指标
+
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Orders (Today)", "142", "12%")
     col2.metric("Recommendation CTR", "34.5%", "4.2%")
