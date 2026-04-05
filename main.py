@@ -7,7 +7,37 @@ import re
 import os
 
 app = FastAPI(title="Toast Smart Recs Backend - DS 440")
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import threading
 
+# ==========================================
+# 🛡️ DEFENSE MECHANISM: Traffic Controller (Rate Limiter)
+# ==========================================
+active_requests = 0
+request_lock = threading.Lock()
+MAX_CONCURRENT_REQUESTS = 50 # Maximum number of users allowed at the exact same time
+
+@app.middleware("http")
+async def limit_traffic(request: Request, call_next):
+    global active_requests
+    
+    with request_lock:
+        if active_requests >= MAX_CONCURRENT_REQUESTS:
+            # Gracefully reject extra requests with a 429 status code instead of crashing
+            return JSONResponse(
+                status_code=429, 
+                content={"error": "⚠️ Server is currently experiencing high traffic. Please try again later."}
+            )
+        active_requests += 1
+
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        with request_lock:
+            active_requests -= 1
+# ==========================================
 # ==========================================
 # 📊 全局变量与数据初始化
 # ==========================================
@@ -16,7 +46,9 @@ menu_data = pd.DataFrame()
 hot_tags = []
 
 # 你的 14w 行真实数据文件名
-DATA_FILE = "dataset_crawler-google-places_2026-03-29_18-37-43-145.json"
+DATA_FILE = "dataset_crawler-google-places_2026-03-29_18-37-43-145.json123"
+# df = pd.read_csv(r'C:\Users\22805\Desktop\试验代码文件\poisoned_restaurant_data.csv')
+# test_crash = df['Average_Cost'].mean()
 
 @app.on_event("startup")
 def load_db():
@@ -29,6 +61,7 @@ def load_db():
             print(f"📂 Loading {DATA_FILE}...")
             # 你的 JSON 是标准列表格式，不需要 lines=True
             google_data = pd.read_json(DATA_FILE)
+            
             print(f"✅ Loaded {len(google_data)} rows of local market data.")
             
             # --- ✨ 核心：数据驱动的标签提取 (NLP) ---
@@ -110,17 +143,93 @@ def get_competitor_stats():
     if google_data.empty:
         return []
     
-    # 这里的处理逻辑：只取评分最高的前 10 家本地竞品传给前端，防止数据过载
+    # --- 修复部分：通过计数来生成评论数 ---
+    # 我们按餐厅名 (title) 分组
+    # 'stars': 'mean' 计算平均分
+    # 'title': 'count' 计算该餐厅出现了多少次（即有多少条评论）
     stats = google_data.groupby('title').agg({
         'stars': 'mean',
-        'reviewsCount': 'first'
-    }).reset_index()
+        'title': 'count' 
+    }).rename(columns={'title': 'reviewCount'}).reset_index()
     
-    top_competitors = stats.sort_values(by='reviewsCount', ascending=False).head(10)
+    # 排序并取前 10 名
+    top_competitors = stats.sort_values(by='reviewCount', ascending=False).head(10)
     
-    # 格式化为前端熟悉的字段名
+    # 转换为前端需要的格式
     return [
-        {"name": row['title'], "rating": round(row['stars'], 1), "reviewCount": row['reviewsCount']}
+        {
+            "name": row['title'], 
+            "rating": round(row['stars'], 1), 
+            "reviewCount": int(row['reviewCount'])
+        }
         for _, row in top_competitors.iterrows()
     ]
+# ==========================================
+# 🛡️ STRESS TEST: Defense Mechanism Verification
+# ==========================================
+import pandas as pd
+
+print("\n--- 🛡️ Starting Defense Mechanism Test ---")
+# try:
+#     # 1. 读取我们制造的脏数据炸弹
+#     df_test = pd.read_csv(r'C:\Users\22805\Desktop\试验代码文件\poisoned_restaurant_data.csv')
+#     print("💣 Poisoned data loaded. Commencing cleaning...")
+    
+#     # 2. 清洗逻辑：强制转换数值，非数值变成 NaN
+#     df_test['Rating'] = pd.to_numeric(df_test['Rating'], errors='coerce')
+#     df_test['Average_Cost'] = pd.to_numeric(df_test['Average_Cost'], errors='coerce')
+    
+#     # 3. 逻辑过滤：踢掉不合理的评分和价格
+#     df_test = df_test[(df_test['Rating'] >= 0) & (df_test['Rating'] <= 5)]
+#     df_test = df_test[df_test['Average_Cost'] >= 0]
+    
+#     # 4. 尝试执行刚才让系统崩溃的计算
+#     safe_mean = df_test['Average_Cost'].mean()
+#     print(f"✅ Data cleaned successfully! Safe average cost calculated: {safe_mean}")
+
+# except Exception as e:
+#     # 如果真的遇到无法处理的绝境，系统也不会崩溃死掉
+#     print(f"⚠️ Warning: Blocked bad data. Details: {e}")
+# print("--- Test Complete ---\n")
+
+
+# ==========================================
+# 🎯 TARGET ENDPOINT FOR STRESS TEST
+# ==========================================
+# import time
+# import uvicorn
+
+# @app.get("/search")
+# def dummy_search():
+#     # Simulate a heavy database query taking 0.5 seconds
+#     time.sleep(0.5) 
+#     return {"message": "Search results found!"}
+
+# # Start the server properly so it listens for requests
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="127.0.0.1", port=8000)
+
+# ==========================================
+# 🛡️ CASE 3 DEFENSE: Data Schema Validation
+# ==========================================
+print("\n🛡️ Testing Search Logic Resilience...")
+
+# 1. First, check if the dataset is actually loaded and contains the required column
+if 'name' not in google_data.columns:
+    print("❌ CRITICAL ERROR: Column 'name' is missing from the database!")
+    print("⚠️ Defense Triggered: Search operation aborted to prevent system crash.")
+    # Here you can handle the error gracefully, maybe show a popup to the user
+else:
+    # 2. Only if the column exists, perform the filter
+    print("✅ Schema check passed. Filtering data...")
+    search_query = "NonExistentRestaurant_12345"
+    filtered_df = google_data[google_data['name'] == search_query]
+    
+    # 3. Further defense: Check if any results were found
+    if filtered_df.empty:
+        print(f"ℹ️ Info: No restaurants found matching '{search_query}'.")
+    else:
+        print(f"✅ Success! Found {len(filtered_df)} matches.")
+
+print("--- Case 3 Defense Test Complete ---\n")
 
