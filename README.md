@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 ```bash
 # Run the FastAPI server
-uvicorn <BACKEND_FILE_NAME>:app --host 0.0.0.0 --port 8000
+uvicorn main.py:app --host 0.0.0.0 --port 8000
 ```
 *Wait until you see `Application startup complete`. The backend is now processing the dataset and TF-IDF recommendation logic.*
 
