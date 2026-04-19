@@ -4,7 +4,7 @@
 
 ---
 
-## ⚠️ URGENT INSTRUCTIONS NEVER RUN THIS PROGRAM BEFORE 
+##  INSTRUCTIONS NEVER RUN THIS PROGRAM BEFORE 
 
 This system requires running a backend server (FastAPI) and a frontend dashboard (Streamlit) simultaneously.
 
