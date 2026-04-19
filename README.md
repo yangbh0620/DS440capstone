@@ -13,7 +13,7 @@ Open your terminal (Command Prompt/PowerShell on Windows, Terminal on Mac) and r
 
 ```bash
 # 1. Clone the repository
-git clone <YOUR_GITHUB_REPO_LINK>
+git clone https://github.com/yangbh0620/DS440capstone
 cd <YOUR_REPO_FOLDER_NAME>
 
 # 2. Create a clean virtual environment
