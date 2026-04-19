@@ -20,8 +20,9 @@ cd <YOUR_REPO_FOLDER_NAME>
 python -m venv venv
 
 # 3. Activate the virtual environment
-# --> On Windows (PSU Lab PC):
-venv\Scripts\activate
+# --> On Windows:
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 # --> On Mac/Linux:
 # source venv/bin/activate
 
