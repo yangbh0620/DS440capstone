@@ -14,7 +14,7 @@ pandas
 numpy
 requests
 joblib
-sklearn
+scikit-learn
 
 # Scraping & Utilities
 apify-client
