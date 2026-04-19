@@ -48,12 +48,13 @@ cd <YOUR_REPO_FOLDER_NAME>
 
 # 2. Activate the virtual environment again
 # --> On Windows:
-venv\Scripts\activate
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 # --> On Mac/Linux:
 # source venv/bin/activate
 
 # 3. Run the Streamlit interface
-streamlit run <FRONTEND_FILE_NAME>.py
+streamlit run app.py
 ```
 
 ### Step 4: Evaluate the Results
