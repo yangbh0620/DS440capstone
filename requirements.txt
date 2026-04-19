@@ -13,6 +13,7 @@ streamlit-folium
 pandas
 numpy
 requests
+joblib
 
 # Scraping & Utilities
 apify-client
