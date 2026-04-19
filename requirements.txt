@@ -1,0 +1,20 @@
+# Web Framework & API
+fastapi
+uvicorn
+pydantic
+
+# Frontend & Visualization
+streamlit
+plotly
+folium
+streamlit-folium
+
+# Data Processing
+pandas
+numpy
+requests
+
+# Scraping & Utilities
+apify-client
+python-multipart
+pytest
